@@ -222,7 +222,7 @@ Last login: Thu Jan 11 15:18:01 2024 from 10.0.2.2
 update failed: SERVFAIL
 > quit
 
-cat /var/log/audit/audit.log | audit2why
+[root@ns01 ~]# cat /var/log/audit/audit.log | audit2why
 type=AVC msg=audit(1704988101.353:1932): avc:  denied  { create } for  pid=5017 comm="isc-worker0000" name="named.ddns.lab.jnl" scontext=system_u:system_r:named_t:s0 tcontext=system_u:object_r:etc_t:s0 tclass=file permissive=0
 	Was caused by:
 		Missing type enforcement (TE) allow rule.
@@ -252,7 +252,7 @@ drw-rwx---. root named unconfined_u:object_r:named_zone_t:s0 dynamic
 -rw-rw----. root named system_u:object_r:named_zone_t:s0 named.dns.lab.view1
 -rw-rw----. root named system_u:object_r:named_zone_t:s0 named.newdns.lab
 
-[root@ns01 ~]# nsupdate -k /etc/named.zonetransfer.key
+[root@client ~]# nsupdate -k /etc/named.zonetransfer.key
 > server 192.168.50.10
 > zone ddns.lab
 > update add www.ddns.lab. 60 A 192.168.50.15
@@ -262,7 +262,7 @@ update failed: SERVFAIL
 
 Не работает!
 
-cat /var/log/audit/audit.log | audit2why
+[root@ns01 ~]# cat /var/log/audit/audit.log | audit2why
 type=AVC msg=audit(1704988645.734:1966): avc:  denied  { write } for  pid=5017 comm="isc-worker0000" name="dynamic" dev="sda1" ino=5386406 scontext=system_u:system_r:named_t:s0 tcontext=unconfined_u:object_r:named_zone_t:s0 tclass=dir permissive=0
 
 	Was caused by:
@@ -275,8 +275,8 @@ type=AVC msg=audit(1704988645.734:1966): avc:  denied  { write } for  pid=5017 c
 
 Идём предложенным путём.
 
-[root@ns01 ~]# setsebool -P named_write_master_zones 1
-[root@ns01 ~]# nsupdate -k /etc/named.zonetransfer.key
+[root@client ~]# setsebool -P named_write_master_zones 1
+[root@client ~]# nsupdate -k /etc/named.zonetransfer.key
 > server 192.168.50.10
 > zone ddns.lab
 > update add www.ddns.lab. 60 A 192.168.50.15
@@ -285,12 +285,7 @@ type=AVC msg=audit(1704988645.734:1966): avc:  denied  { write } for  pid=5017 c
 
 О, работает.
 
-root@ns01 ~]# dig www.ddns.lab
-; <<>> DiG 9.11.4-P2-RedHat-9.11.4-26.P2.el7_9.15 <<>> www.ddns.lab
-;; global options: +cmd
-;; connection timed out; no servers could be reached
-
-[root@ns01 ~]# dig @192.168.50.10 www.ddns.lab
+[root@client ~]# dig @192.168.50.10 www.ddns.lab
 ; <<>> DiG 9.11.4-P2-RedHat-9.11.4-26.P2.el7_9.15 <<>> @192.168.50.10 www.ddns.lab
 ; (1 server found)
 ;; global options: +cmd
@@ -311,6 +306,28 @@ ns01.dns.lab.		3600	IN	A	192.168.50.10
 ;; SERVER: 192.168.50.10#53(192.168.50.10)
 ;; WHEN: Thu Jan 11 16:09:58 UTC 2024
 ;; MSG SIZE  rcvd: 96
+
+[root@client ~]# dig www.ddns.lab
+; <<>> DiG 9.11.4-P2-RedHat-9.11.4-26.P2.el7_9.15 <<>> www.ddns.lab
+;; global options: +cmd
+;; Got answer:
+;; ->>HEADER<<- opcode: QUERY, status: NXDOMAIN, id: 60312
+;; flags: qr aa rd ra; QUERY: 1, ANSWER: 0, AUTHORITY: 1, ADDITIONAL: 1
+;; OPT PSEUDOSECTION:
+; EDNS: version: 0, flags:; udp: 4096
+;; QUESTION SECTION:
+;www.ddns.lab.			IN	A
+;; AUTHORITY SECTION:
+ddns.lab.		600	IN	SOA	ns01.dns.lab. root.dns.lab. 2711201407 3600 600 86400 600
+;; Query time: 1 msec
+;; SERVER: 192.168.50.10#53(192.168.50.10)
+;; WHEN: Thu Jan 11 16:26:04 UTC 2024
+;; MSG SIZE  rcvd: 91
+
+
+
+
+
 ```
 
 
